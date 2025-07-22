@@ -78,25 +78,4 @@ describe("mint-craft-model-registry", () => {
 
 });
 
-    // #[account(mut)]
-    // pub signer:Signer<'info>,
-    // #[account(
-    //     init,
-    //     payer=signer,
-    //     space=8+AiModel::INIT_SPACE,
-    //     seeds=[b"ai",name.as_bytes(),signer.key().as_ref(),global_state.key().as_ref()],
-    //     bump
-    // )]
-    // pub ai_model:Account<'info,AiModel>,
-    // #[account(
-    //     seeds=[b"globalAiState"],
-    //     bump=global_state.bump  
-    // )]
-    // pub global_state:Account<'info,GlobalState>,
-    // #[account(
-    //     mut,
-    //     seeds=[b"user",signer.key().as_ref()],
-    //     bump
-    // )]
-    // pub user_config:Account<'info,UserConfig>,
-    // pub system_program:Program<'info,System>
+  
