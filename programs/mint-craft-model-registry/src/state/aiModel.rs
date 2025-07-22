@@ -14,6 +14,7 @@ pub struct AiModel{
     pub created_at:i64,
     #[max_len(50)]
     pub api_endpoint:String,
-    pub Dismantled_at:Option<i64>
+    pub Dismantled_at:Option<i64>,
+    pub bump:u8
 }
 

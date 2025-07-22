@@ -1,6 +1,8 @@
-use anchor_lang::{prelude::*, solana_program::example_mocks::solana_rpc_client_api::client_error::ClientError};
+use std::thread::sleep;
 
-use crate::AiModel;
+use anchor_lang::{prelude::*};
+
+use crate::{AiModel, GlobalState,UserConfig};
 
 #[derive(Accounts)]
 #[instruction(name:String)]
@@ -8,17 +10,29 @@ pub struct DismantledAiModel<'info>{
     pub signer:Signer<'info>,
     #[account(
         mut,
-        seeds=[b"ai",name.as_bytes(),signer.key().as_ref()],
+        seeds=[b"ai",name.as_bytes(),signer.key().as_ref(),global_state.key().as_ref()],
         bump
     )]
-    pub AiModel:Account<'info,AiModel>,
+    pub ai_model:Account<'info,AiModel>,
+        #[account(
+        seeds=[b"globalAiState"],
+        bump=global_state.bump  
+    )]
+    pub global_state:Account<'info,GlobalState>,
+        #[account(
+        mut,
+        seeds=[b"user",signer.key().as_ref()],
+        bump
+    )]
+    pub user_config:Account<'info,UserConfig>,
     pub system_program:Program<'info,System>,
 }
 
 impl<'info>DismantledAiModel<'info>{
-    pub fn dismantle_ai_model(&mut self)->Result<()>{
-        self.AiModel.is_active=false;
-        self.AiModel.Dismantled_at=Some(Clock::get()?.unix_timestamp);
+    pub fn dismantle_ai_model(&mut self,_name:String)->Result<()>{
+        self.ai_model.is_active=false;
+        self.ai_model.Dismantled_at=Some(Clock::get()?.unix_timestamp);
+        self.user_config.ai_models_registered-=1;
         Ok(())
     }
 }
