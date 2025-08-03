@@ -9,7 +9,7 @@ pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("3WbdiK5An2Q5GfqQAZQ2qstSukqqMiiZy8tfydS3TvHf");
+declare_id!("W626GLKRRbE1rPZnNgi5kHgUUfFTiyzPqdvS196NdaZ");
 
 #[program]
 pub mod mint_craft_model_registry {
@@ -21,6 +21,7 @@ pub mod mint_craft_model_registry {
     pub fn initializeUser(ctx:Context<InitializeUser>)->Result<()>{
         ctx.accounts.initialize_user(ctx.bumps)
     }
+
     pub fn registerAiModel(ctx:Context<RegisterAiModel>,id:i64, royalty_percentage:u16, api_endpoint:String, description:String, name:String)->Result<()>{
         ctx.accounts.register_ai_model(id, royalty_percentage, api_endpoint, description, name, ctx.bumps)
     }

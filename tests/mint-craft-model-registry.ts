@@ -1,81 +1,130 @@
-
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { MintCraftModelRegistry } from "../target/types/mint_craft_model_registry";
-import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
-import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system";
+import {
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  SystemProgram,
+} from "@solana/web3.js";
+import { expect } from "chai";
 
 describe("mint-craft-model-registry", () => {
-  // Configure the client to use the local cluster.
-  const provider=anchor.AnchorProvider.env();
+  const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
-  const program = anchor.workspace.mintCraftModelRegistry as Program<MintCraftModelRegistry>;
-  let authority=Keypair.generate();
-  let user=Keypair.generate();
-  let userConfig:PublicKey
-  let connection= provider.connection
-  let global_state:PublicKey;
-  let aiModel:PublicKey
-  //globalAiState
-  before(async()=>{
-    //airdropping to the authority
-    await provider.connection.confirmTransaction(
-    await connection.requestAirdrop(authority.publicKey,2*LAMPORTS_PER_SOL)
-    )
-    await provider.connection.confirmTransaction(
-    await connection.requestAirdrop(user.publicKey,2*LAMPORTS_PER_SOL)
-    )
-    global_state=PublicKey.findProgramAddressSync(
+  const program = anchor.workspace
+    .mintCraftModelRegistry as Program<MintCraftModelRegistry>;
+
+  // Test actors
+  const authority = Keypair.generate();
+  const user = Keypair.generate();
+
+  // Derived accounts
+  let userConfig: PublicKey;
+  let globalState: PublicKey;
+  let aiModel: PublicKey;
+
+  // Setup
+  before(async () => {
+    const connection = provider.connection;
+
+    // Airdrop SOL
+    for (const wallet of [authority, user]) {
+      const sig = await connection.requestAirdrop(wallet.publicKey, 2 * LAMPORTS_PER_SOL);
+      await connection.confirmTransaction(sig);
+    }
+
+    // PDA Derivations
+    globalState = PublicKey.findProgramAddressSync(
       [Buffer.from("globalAiState")],
       program.programId
-    )[0]
+    )[0];
 
-    userConfig=PublicKey.findProgramAddressSync(
-      [Buffer.from("user"),user.publicKey.toBuffer()],
+    userConfig = PublicKey.findProgramAddressSync(
+      [Buffer.from("user"), user.publicKey.toBuffer()],
       program.programId
-    )[0]
-//b"ai",name.as_bytes(),signer.key().as_ref(),global_state.key().as_ref()],
-    aiModel=PublicKey.findProgramAddressSync(
-      [Buffer.from("ai"),Buffer.from("Demoapi"),user.publicKey.toBuffer(),global_state.toBuffer()],
-      program.programId
-    )[0]
-  })
+    )[0];
 
-  it('initializeglobalState',async()=>{
-    await program.methods.initializeGlobalState().accounts({
-      authority:authority.publicKey,
-      global_state:global_state,
-      system_program:SYSTEM_PROGRAM_ID
-    }).signers([authority]).rpc()
-  })
-  it("initializeUser",async()=>{
-    await program.methods.initializeUser().accounts({
-      user:user.publicKey,
-      userConfig:userConfig,
-      system_program:SYSTEM_PROGRAM_ID
-    }).signers([user]).rpc()
-  })
-  it("registerAiModel",async()=>{
-    await program.methods.registerAiModel(new anchor.BN(1),5,"https://api.endpoints","This is a demo api","Demoapi").accounts({
-      signer:user.publicKey,
-      ai_model:aiModel,
-      global_state:global_state,
-      user_config:userConfig,
-      system_program:SYSTEM_PROGRAM_ID
-    }).signers([user]).rpc()
-  })
-  it("dismantleAiModel",async()=>{
-    await program.methods.dismantleAiModel("Demoapi").accounts(
-      {
-        signer:user.publicKey,
-        ai_model:aiModel,
-        global_state:global_state,
-        user_config:userConfig,
-        system_program:SYSTEM_PROGRAM_ID
+    aiModel = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("ai"),
+        Buffer.from("Demoapi"),
+        user.publicKey.toBuffer(),
+        globalState.toBuffer(),
+      ],
+      program.programId
+    )[0];
+  });
+
+  describe("Initialization", () => {
+    it("should initialize global state", async () => {
+      await program.methods.initializeGlobalState().accounts({
+        authority: authority.publicKey,
+        globalState: globalState,
+        systemProgram: SystemProgram.programId,
+      }).signers([authority]).rpc();
+
+      const stateAccount = await program.account.globalState.fetch(globalState);
+      expect(stateAccount.authority.toBase58()).to.equal(authority.publicKey.toBase58());
+    });
+
+    it("should initialize user config", async () => {
+      await program.methods.initializeUser().accounts({
+        user: user.publicKey,
+        userConfig: userConfig,
+        systemProgram: SystemProgram.programId,
+      }).signers([user]).rpc();
+
+      const config = await program.account.userConfig.fetch(userConfig);
+      expect(config.user.toBase58()).to.equal(user.publicKey.toBase58());
+    });
+  });
+
+  describe("AI Model", () => {
+    it("should register an AI model", async () => {
+      await program.methods
+        .registerAiModel(
+          new anchor.BN(1),
+          5,
+          "https://api.endpoints",
+          "This is a demo api",
+          "Demoapi"
+        )
+        .accounts({
+          signer: user.publicKey,
+          aiModel: aiModel,
+          globalState: globalState,
+          userConfig: userConfig,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([user])
+        .rpc();
+
+      const model = await program.account.aiModel.fetch(aiModel);
+      expect(model.name).to.equal("Demoapi");
+      expect(model.description).to.include("demo api");
+    });
+
+    it("should dismantle the AI model", async () => {
+      await program.methods
+        .dismantleAiModel("Demoapi")
+        .accounts({
+          signer: user.publicKey,
+          aiModel: aiModel,
+          globalState: globalState,
+          userConfig: userConfig,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([user])
+        .rpc();
+
+      try {
+        await program.account.aiModel.fetch(aiModel);
+        expect.fail("Model account should not exist after dismantle");
+      } catch (err) {
+        // console.log(err)
+        expect(err.message).to.include("should not exist");
       }
-    ).signers([user]).rpc()
-  })
-
+    });
+  });
 });
-
-  

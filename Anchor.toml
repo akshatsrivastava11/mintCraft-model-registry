@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-mint_craft_model_registry = "3WbdiK5An2Q5GfqQAZQ2qstSukqqMiiZy8tfydS3TvHf"
+mint_craft_model_registry = "W626GLKRRbE1rPZnNgi5kHgUUfFTiyzPqdvS196NdaZ"
 
 [registry]
 url = "https://api.apr.dev"
