@@ -55,3 +55,9 @@ msg!("Debug | Provided ai_model: {:?}", self.ai_model.key());
         Ok(())
     }
 }
+
+#[error_code]
+pub enum RegistryError {
+    #[msg("An AI model with this name already exists for this user.")]
+    AiModelAlreadyExists,
+}

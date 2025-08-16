@@ -23,6 +23,7 @@ pub mod mint_craft_model_registry {
     }
 
     pub fn registerAiModel(ctx:Context<RegisterAiModel>,id:i64, royalty_percentage:u16, api_endpoint:String, description:String, name:String)->Result<()>{
+
         ctx.accounts.register_ai_model(id, royalty_percentage, api_endpoint, description, name, ctx.bumps)
     }
     pub fn dismantleAiModel(ctx:Context<DismantledAiModel>,name:String)->Result<()>{
