@@ -7,7 +7,7 @@ import {
   PublicKey,
   SystemProgram,
 } from "@solana/web3.js";
-import { expect } from "chai";
+import { assert, expect } from "chai";
 
 describe("mint-craft-model-registry", () => {
   const provider = anchor.AnchorProvider.env();
@@ -127,4 +127,52 @@ describe("mint-craft-model-registry", () => {
       }
     });
   });
-});
+  describe("edge cases",()=>{
+    it("should fail to register an AI model with duplicate name", async () => {
+      try {
+        await program.methods.registerAiModel(
+            new anchor.BN(1),
+            5,
+            "https://api.endpoints",
+            "This is a demo api",
+            "Demoapi"
+          )
+          .accounts({
+            signer: user.publicKey,
+            aiModel: aiModel,
+            globalState: globalState,
+            userConfig: userConfig,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([user])
+          .rpc();
+          assert.fail("Expected transaction to fail, but it succeeded");
+        
+      } catch (error) {
+        // console.log("an error occured",error);
+        expect(error.message).to.include("should fail to register an AI model with duplicate name");
+      }
+      })
+
+      it("should fail to dismantle an AI model that does not exist", async () => {
+        try {
+          await program.methods.dismantleAiModel("ThisModeldoesnotExist")
+              .accounts({
+            signer: user.publicKey,
+            aiModel: aiModel,
+            globalState: globalState,
+            userConfig: userConfig,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([user])
+          .rpc();
+          assert.fail("Expected transaction to fail, but it succeeded");
+          
+        } catch (error) {
+          // console.log("an error occured",error);
+        expect(error.message).to.include("should fail to dismantle an AI model that does not exist");
+        }
+      })
+})
+
+})
